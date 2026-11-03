@@ -4,62 +4,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moja lokalizacja</title>
+    <title>Lokalizacja i orientacja telefonu</title>
 </head>
 <body>
 
-    <h1>Moja lokalizacja</h1>
+    <h1>Lokalizacja i orientacja telefonu</h1>
+
+    <h2>Geolocation API</h2>
 
     <p>Szerokość geograficzna: <span id="lat">---</span></p>
     <p>Długość geograficzna: <span id="lon">---</span></p>
 
     <button onclick="startLokalizacja()">Uruchom lokalizację</button>
+    <p id="statusGPS">Lokalizacja nieuruchomiona.</p>
 
-    <p id="status">Kliknij przycisk, aby rozpocząć.</p>
+    <hr>
+
+    <h2>Device Orientation API</h2>
+
+    <p>Alfa: <span id="alpha">---</span></p>
+    <p>Beta: <span id="beta">---</span></p>
+    <p>Gamma: <span id="gamma">---</span></p>
+
+    <button onclick="startOrientacja()">Uruchom orientację</button>
+    <p id="statusOrientacja">Orientacja nieuruchomiona.</p>
 
     <script>
-        let obserwator = null;
+        let obserwatorGPS = null;
+        let orientacjaUruchomiona = false;
 
+        // GEOLOCATION API
         function startLokalizacja() {
             if (!navigator.geolocation) {
-                document.getElementById("status").innerText =
-                    "Twoja przeglądarka nie obsługuje lokalizacji.";
+                document.getElementById("statusGPS").innerText =
+                    "Przeglądarka nie obsługuje lokalizacji.";
                 return;
             }
 
-            if (obserwator !== null) {
+            if (obserwatorGPS !== null) {
                 return;
             }
 
-            document.getElementById("status").innerText =
+            document.getElementById("statusGPS").innerText =
                 "Pobieranie lokalizacji...";
 
-            obserwator = navigator.geolocation.watchPosition(
+            obserwatorGPS = navigator.geolocation.watchPosition(
                 function(pozycja) {
-                    let szerokosc = pozycja.coords.latitude;
-                    let dlugosc = pozycja.coords.longitude;
-
                     document.getElementById("lat").innerText =
-                        szerokosc.toFixed(6);
+                        pozycja.coords.latitude.toFixed(6);
 
                     document.getElementById("lon").innerText =
-                        dlugosc.toFixed(6);
+                        pozycja.coords.longitude.toFixed(6);
 
-                    document.getElementById("status").innerText =
+                    document.getElementById("statusGPS").innerText =
                         "Lokalizacja jest aktualizowana.";
                 },
 
                 function(blad) {
-                    if (blad.code === 1) {
-                        document.getElementById("status").innerText =
-                            "Brak zgody na lokalizację. Sprawdź uprawnienia.";
-                    } else {
-                        document.getElementById("status").innerText =
-                            "Nie udało się pobrać lokalizacji: " + blad.message;
-                    }
+                    document.getElementById("statusGPS").innerText =
+                        "Błąd lokalizacji: " + blad.message;
 
-                    navigator.geolocation.clearWatch(obserwator);
-                    obserwator = null;
+                    if (blad.code === 1) {
+                        navigator.geolocation.clearWatch(obserwatorGPS);
+                        obserwatorGPS = null;
+                    }
                 },
 
                 {
@@ -69,7 +77,64 @@
                 }
             );
         }
+
+        // DEVICE ORIENTATION API
+        async function startOrientacja() {
+            if (!window.DeviceOrientationEvent) {
+                document.getElementById("statusOrientacja").innerText =
+                    "Przeglądarka nie obsługuje orientacji.";
+                return;
+            }
+
+            if (orientacjaUruchomiona) {
+                return;
+            }
+
+            // Na iPhone może być wymagana zgoda
+            if (typeof DeviceOrientationEvent.requestPermission === "function") {
+                try {
+                    const zgoda = await DeviceOrientationEvent.requestPermission();
+
+                    if (zgoda !== "granted") {
+                        document.getElementById("statusOrientacja").innerText =
+                            "Brak zgody na czujniki.";
+                        return;
+                    }
+                } catch (blad) {
+                    document.getElementById("statusOrientacja").innerText =
+                        "Błąd uprawnień: " + blad.message;
+                    return;
+                }
+            }
+
+            window.addEventListener("deviceorientation", function(event) {
+                document.getElementById("alpha").innerText =
+                    event.alpha === null ? "---" : event.alpha.toFixed(2) + "°";
+
+                document.getElementById("beta").innerText =
+                    event.beta === null ? "---" : event.beta.toFixed(2) + "°";
+
+                document.getElementById("gamma").innerText =
+                    event.gamma === null ? "---" : event.gamma.toFixed(2) + "°";
+
+                if (event.alpha !== null ||
+                    event.beta !== null ||
+                    event.gamma !== null) {
+                    document.getElementById("statusOrientacja").innerText =
+                        "Orientacja jest aktualizowana.";
+                } else {
+                    document.getElementById("statusOrientacja").innerText =
+                        "Brak danych z czujników.";
+                }
+            });
+
+            orientacjaUruchomiona = true;
+
+            document.getElementById("statusOrientacja").innerText =
+                "Oczekiwanie na dane z czujników...";
+        }
     </script>
 
 </body>
 </html>
+
