@@ -48,6 +48,10 @@
     </button>
 
     <p id="statusRuch">Wykrywanie ruchu nieuruchomione.</p>
+    
+    <hr>
+    <h2>Orientacja ekranu</h2>
+    <p>Telefon jest ustawiony: <span id="ustawienie">---</span></p>
 
     <script>
 
@@ -214,7 +218,20 @@
 
             ruchUruchomiony = true;
         }
-
+        
+        const ekran = window.matchMedia("(orientation: portrait)");
+        
+        function sprawdzUstawienie() {
+            if (ekran.matches) {
+                document.getElementById("ustawienie").innerText = "PIONOWO";
+            } else {
+                document.getElementById("ustawienie").innerText = "POZIOMO";
+            }
+        }
+        
+        sprawdzUstawienie();
+        
+        ekran.addEventListener("change", sprawdzUstawienie);
     </script>
 
 </body>
