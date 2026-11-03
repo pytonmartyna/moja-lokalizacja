@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moja lokalizacja</title>
+</head>
+<body>
+
+    <h1>Moja lokalizacja</h1>
+
+    <p>Szerokość geograficzna: <span id="lat">---</span></p>
+    <p>Długość geograficzna: <span id="lon">---</span></p>
+
+    <button onclick="startLokalizacja()">Uruchom lokalizację</button>
+
+    <p id="status">Kliknij przycisk, aby rozpocząć.</p>
+
+    <script>
+        let obserwator = null;
+
+        function startLokalizacja() {
+            if (!navigator.geolocation) {
+                document.getElementById("status").innerText =
+                    "Twoja przeglądarka nie obsługuje lokalizacji.";
+                return;
+            }
+
+            if (obserwator !== null) {
+                return;
+            }
+
+            document.getElementById("status").innerText =
+                "Pobieranie lokalizacji...";
+
+            obserwator = navigator.geolocation.watchPosition(
+                function(pozycja) {
+                    let szerokosc = pozycja.coords.latitude;
+                    let dlugosc = pozycja.coords.longitude;
+
+                    document.getElementById("lat").innerText =
+                        szerokosc.toFixed(6);
+
+                    document.getElementById("lon").innerText =
+                        dlugosc.toFixed(6);
+
+                    document.getElementById("status").innerText =
+                        "Lokalizacja jest aktualizowana.";
+                },
+
+                function(blad) {
+                    if (blad.code === 1) {
+                        document.getElementById("status").innerText =
+                            "Brak zgody na lokalizację. Sprawdź uprawnienia.";
+                    } else {
+                        document.getElementById("status").innerText =
+                            "Nie udało się pobrać lokalizacji: " + blad.message;
+                    }
+
+                    navigator.geolocation.clearWatch(obserwator);
+                    obserwator = null;
+                },
+
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 15000
+                }
+            );
+        }
+    </script>
+
+</body>
+</html>
