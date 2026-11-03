@@ -4,18 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lokalizacja i orientacja telefonu</title>
+    <title>Czujniki telefonu</title>
 </head>
 <body>
 
-    <h1>Lokalizacja i orientacja telefonu</h1>
+    <h1>Czujniki telefonu</h1>
 
     <h2>Geolocation API</h2>
 
-    <p>Szerokość geograficzna: <span id="lat">---</span></p>
-    <p>Długość geograficzna: <span id="lon">---</span></p>
+    <p>Szerokość: <span id="lat">---</span></p>
+    <p>Długość: <span id="lon">---</span></p>
 
-    <button onclick="startLokalizacja()">Uruchom lokalizację</button>
+    <button onclick="startLokalizacja()">
+        Uruchom lokalizację
+    </button>
+
     <p id="statusGPS">Lokalizacja nieuruchomiona.</p>
 
     <hr>
@@ -26,18 +29,37 @@
     <p>Beta: <span id="beta">---</span></p>
     <p>Gamma: <span id="gamma">---</span></p>
 
-    <button onclick="startOrientacja()">Uruchom orientację</button>
+    <button onclick="startOrientacja()">
+        Uruchom orientację
+    </button>
+
     <p id="statusOrientacja">Orientacja nieuruchomiona.</p>
 
+    <hr>
+
+    <h2>Device Motion API</h2>
+
+    <p>X: <span id="x">---</span></p>
+    <p>Y: <span id="y">---</span></p>
+    <p>Z: <span id="z">---</span></p>
+
+    <button onclick="startRuch()">
+        Uruchom wykrywanie ruchu
+    </button>
+
+    <p id="statusRuch">Wykrywanie ruchu nieuruchomione.</p>
+
     <script>
+
         let obserwatorGPS = null;
         let orientacjaUruchomiona = false;
+        let ruchUruchomiony = false;
 
-        // GEOLOCATION API
         function startLokalizacja() {
+
             if (!navigator.geolocation) {
                 document.getElementById("statusGPS").innerText =
-                    "Przeglądarka nie obsługuje lokalizacji.";
+                    "Brak obsługi lokalizacji.";
                 return;
             }
 
@@ -49,7 +71,9 @@
                 "Pobieranie lokalizacji...";
 
             obserwatorGPS = navigator.geolocation.watchPosition(
+
                 function(pozycja) {
+
                     document.getElementById("lat").innerText =
                         pozycja.coords.latitude.toFixed(6);
 
@@ -61,6 +85,7 @@
                 },
 
                 function(blad) {
+
                     document.getElementById("statusGPS").innerText =
                         "Błąd lokalizacji: " + blad.message;
 
@@ -78,11 +103,11 @@
             );
         }
 
-        // DEVICE ORIENTATION API
         async function startOrientacja() {
+
             if (!window.DeviceOrientationEvent) {
                 document.getElementById("statusOrientacja").innerText =
-                    "Przeglądarka nie obsługuje orientacji.";
+                    "Brak obsługi orientacji.";
                 return;
             }
 
@@ -90,8 +115,8 @@
                 return;
             }
 
-            // Na iPhone może być wymagana zgoda
             if (typeof DeviceOrientationEvent.requestPermission === "function") {
+
                 try {
                     const zgoda = await DeviceOrientationEvent.requestPermission();
 
@@ -100,6 +125,7 @@
                             "Brak zgody na czujniki.";
                         return;
                     }
+
                 } catch (blad) {
                     document.getElementById("statusOrientacja").innerText =
                         "Błąd uprawnień: " + blad.message;
@@ -108,6 +134,7 @@
             }
 
             window.addEventListener("deviceorientation", function(event) {
+
                 document.getElementById("alpha").innerText =
                     event.alpha === null ? "---" : event.alpha.toFixed(2) + "°";
 
@@ -117,24 +144,79 @@
                 document.getElementById("gamma").innerText =
                     event.gamma === null ? "---" : event.gamma.toFixed(2) + "°";
 
-                if (event.alpha !== null ||
-                    event.beta !== null ||
-                    event.gamma !== null) {
-                    document.getElementById("statusOrientacja").innerText =
-                        "Orientacja jest aktualizowana.";
-                } else {
-                    document.getElementById("statusOrientacja").innerText =
-                        "Brak danych z czujników.";
-                }
+                document.getElementById("statusOrientacja").innerText =
+                    "Orientacja jest aktualizowana.";
             });
 
             orientacjaUruchomiona = true;
-
-            document.getElementById("statusOrientacja").innerText =
-                "Oczekiwanie na dane z czujników...";
         }
+
+        async function startRuch() {
+
+            if (!window.DeviceMotionEvent) {
+                document.getElementById("statusRuch").innerText =
+                    "Brak obsługi wykrywania ruchu.";
+                return;
+            }
+
+            if (ruchUruchomiony) {
+                return;
+            }
+
+            // Uprawnienia wymagane na niektórych telefonach
+            if (typeof DeviceMotionEvent.requestPermission === "function") {
+
+                try {
+                    const zgoda = await DeviceMotionEvent.requestPermission();
+
+                    if (zgoda !== "granted") {
+                        document.getElementById("statusRuch").innerText =
+                            "Brak zgody na czujniki ruchu.";
+                        return;
+                    }
+
+                } catch (blad) {
+                    document.getElementById("statusRuch").innerText =
+                        "Błąd uprawnień: " + blad.message;
+                    return;
+                }
+            }
+
+            document.getElementById("statusRuch").innerText =
+                "Oczekiwanie na dane z czujników...";
+
+            window.addEventListener("devicemotion", function(event) {
+
+                let przyspieszenie = event.acceleration;
+
+                if (!przyspieszenie) {
+                    document.getElementById("statusRuch").innerText =
+                        "Brak danych o przyspieszeniu.";
+                    return;
+                }
+                
+                let x = przyspieszenie.x;
+                let y = przyspieszenie.y;
+                let z = przyspieszenie.z;
+
+                document.getElementById("x").innerText =
+                    x === null ? "---" : x.toFixed(2) + " m/s²";
+
+                document.getElementById("y").innerText =
+                    y === null ? "---" : y.toFixed(2) + " m/s²";
+
+                document.getElementById("z").innerText =
+                    z === null ? "---" : z.toFixed(2) + " m/s²";
+
+                document.getElementById("statusRuch").innerText =
+                    "Ruch jest monitorowany.";
+            });
+
+            ruchUruchomiony = true;
+        }
+
     </script>
 
 </body>
 </html>
-
+ 
